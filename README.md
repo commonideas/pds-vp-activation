@@ -2,7 +2,10 @@
 
 One-click VP access after Klaviyo signup: **unique token**, **7-day TTL**, **single-use**, adds Shopify customer tag `VP`.
 
-**Platform:** Vercel Serverless Functions + **Upstash Redis** (Vercel Marketplace)
+**Platform:** Vercel Serverless Functions + **Supabase Postgres** (token storage)
+
+Setup: **[docs/vp/11-supabase-setup.md](../docs/vp/11-supabase-setup.md)** (Supabase)  
+Alternative: Upstash Redis — see [09-vercel-setup.md](../docs/vp/09-vercel-setup.md)
 
 Full setup guide: **[docs/vp/09-vercel-setup.md](../docs/vp/09-vercel-setup.md)**
 
@@ -13,7 +16,7 @@ Full setup guide: **[docs/vp/09-vercel-setup.md](../docs/vp/09-vercel-setup.md)*
 1. Push this repo to GitHub/GitLab.
 2. Vercel → **New Project** → import repo.
 3. **Root Directory:** `vp-activation`
-4. **Storage** → Marketplace → **Upstash** → create Redis → connect to project (there is no standalone “KV” option anymore).
+4. Create **Supabase** project + run `supabase/schema.sql` (see [11-supabase-setup.md](../docs/vp/11-supabase-setup.md)).
 5. Add environment variables (see `.env.example`).
 6. Deploy → set `ACTIVATION_BASE_URL` to your Vercel URL → redeploy.
 
@@ -40,7 +43,7 @@ Copy from `.env.example`. Required:
 - `KLAVIYO_WEBHOOK_SECRET`
 - `KLAVIYO_PRIVATE_API_KEY`
 - `ACTIVATION_BASE_URL`
-- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (auto when Upstash is linked)
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
 
 ---
 
