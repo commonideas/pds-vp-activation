@@ -1,0 +1,17 @@
+{
+  "name": "pds-vp-activation",
+  "version": "2.0.0",
+  "private": true,
+  "description": "VP magic-link activation — Vercel + KV (Panier des Sens)",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.0"
+  },
+  "devDependencies": {
+    "vercel": "^39.0.0"
+  }
+}

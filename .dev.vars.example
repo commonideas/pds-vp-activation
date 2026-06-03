@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local development (wrangler dev)
+# cp .dev.vars.example .dev.vars
+
+SHOPIFY_ADMIN_TOKEN=shpat_xxxxxxxx
+KLAVIYO_WEBHOOK_SECRET=dev-secret-change-me
+KLAVIYO_PRIVATE_API_KEY=pk_xxxxxxxx
+ACTIVATION_BASE_URL=http://localhost:8787

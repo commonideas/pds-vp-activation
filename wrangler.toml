@@ -1,0 +1,47 @@
+name = "pds-vp-activation"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Default *.workers.dev URL (useful before custom domain is ready)
+workers_dev = true
+
+# ---------------------------------------------------------------------------
+# KV — magic-link tokens (7-day TTL)
+# ---------------------------------------------------------------------------
+# Production:
+#   npx wrangler kv:namespace create VP_TOKENS
+# Preview (local wrangler dev):
+#   npx wrangler kv:namespace create VP_TOKENS --preview
+# Paste both ids below, then deploy.
+[[kv_namespaces]]
+binding = "VP_TOKENS"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# ---------------------------------------------------------------------------
+# Public vars (non-secret)
+# ---------------------------------------------------------------------------
+[vars]
+SHOPIFY_STORE = "panierdessens.myshopify.com"
+SHOP_URL = "https://panierdessens.com"
+VP_COLLECTION_PATH = "/collections/vp-h7k3m9"
+TOKEN_TTL_SECONDS = "604800"
+
+# ---------------------------------------------------------------------------
+# Custom domain route
+# ---------------------------------------------------------------------------
+# Requires panierdessens.com on Cloudflare. Uncomment after KV ids are set.
+# Alternative: Workers dashboard → Triggers → Custom domains → vp.panierdessens.com
+#
+# [[routes]]
+# pattern = "vp.panierdessens.com/*"
+# zone_name = "panierdessens.com"
+
+# ---------------------------------------------------------------------------
+# Secrets — set via CLI (never commit):
+#   npx wrangler secret put SHOPIFY_ADMIN_TOKEN
+#   npx wrangler secret put KLAVIYO_WEBHOOK_SECRET
+#   npx wrangler secret put KLAVIYO_PRIVATE_API_KEY
+#   npx wrangler secret put ACTIVATION_BASE_URL
+# ACTIVATION_BASE_URL example: https://vp.panierdessens.com
+# ---------------------------------------------------------------------------
