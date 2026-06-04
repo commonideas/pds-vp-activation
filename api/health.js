@@ -1,5 +1,5 @@
-import { json } from '../lib/http.js';
+import { renderStatusPage } from '../lib/status-page.js';
 
 export default function handler(req, res) {
-  json(res, { ok: true, service: 'pds-vp-activation' });
+  renderStatusPage(res, 'Health check — OK');
 }
