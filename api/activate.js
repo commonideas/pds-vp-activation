@@ -2,6 +2,7 @@ import { getConfig } from '../lib/config.js';
 import { getToken, markTokenUsed, markTokenUnused } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
 import { redirectToShop } from '../lib/http.js';
+import { buildShopLoginUrl } from '../lib/shop-login.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -39,10 +40,10 @@ export default async function handler(req, res) {
     }
 
     const { shopUrl, vpCollectionPath } = getConfig();
-    const loginUrl = `${shopUrl}/account/login?return_url=${encodeURIComponent(vpCollectionPath)}`;
     const notice = shopifyResult.alreadyHadTag ? 'already_active' : 'activated';
+    const loginUrl = buildShopLoginUrl(shopUrl, vpCollectionPath, { vp_notice: notice });
 
-    return res.redirect(302, `${loginUrl}&vp_notice=${notice}`);
+    return res.redirect(302, loginUrl);
   } catch (err) {
     console.error(err);
     return redirectToShop(res, '/pages/vp?vp_error=activation_failed');
