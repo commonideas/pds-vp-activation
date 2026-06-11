@@ -93,6 +93,12 @@ async function handleActivate(request, env) {
   const data = JSON.parse(raw);
 
   if (data.used) {
+    const reopenResult = await ensureCustomerWithVpTag(env, data.email);
+    if (reopenResult.ok) {
+      const returnPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
+      const loginUrl = `${env.SHOP_URL}/account/login?return_url=${encodeURIComponent(returnPath)}&vp_notice=already_active`;
+      return Response.redirect(loginUrl, 302);
+    }
     return redirectToShop(env, '/pages/vp?vp_error=already_used');
   }
 

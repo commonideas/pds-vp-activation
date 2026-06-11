@@ -23,6 +23,12 @@ export default async function handler(req, res) {
     }
 
     if (data.used) {
+      const reopenResult = await ensureCustomerWithVpTag(data.email);
+      if (reopenResult.ok) {
+        const { shopUrl, vpCollectionPath } = getConfig();
+        const loginUrl = buildShopLoginUrl(shopUrl, vpCollectionPath, { vp_notice: 'already_active' });
+        return res.redirect(302, loginUrl);
+      }
       return redirectToShop(res, '/pages/vp?vp_error=already_used');
     }
 
