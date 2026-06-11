@@ -24,6 +24,7 @@ preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
 [vars]
 SHOPIFY_STORE = "panierdessens.myshopify.com"
 SHOP_URL = "https://panierdessens.com"
+SHOP_HOME_PATH = "/"
 VP_COLLECTION_PATH = "/collections/vp-h7k3m9"
 TOKEN_TTL_SECONDS = "604800"
 

@@ -1,8 +1,12 @@
 import { getConfig } from '../lib/config.js';
-import { getToken, markTokenUsed, markTokenUnused } from '../lib/tokens.js';
+import { getToken, markTokenUsed } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
 import { redirectToShop } from '../lib/http.js';
-import { buildShopLoginUrl } from '../lib/shop-login.js';
+
+/** Magic links stay valid for 7 days; repeat clicks within that window reopen VP collection. */
+function isTokenExpired(data) {
+  return Date.now() > data.expiresAt;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -11,47 +15,35 @@ export default async function handler(req, res) {
 
   try {
     const token = req.query.token;
+    const { homePath, vpCollectionPath } = getConfig();
 
     if (!token) {
-      return redirectToShop(res, '/pages/vp?vp_error=missing_token');
+      return redirectToShop(res, homePath);
     }
 
     const data = await getToken(token);
 
     if (!data) {
-      return redirectToShop(res, '/pages/vp?vp_error=invalid_token');
+      return redirectToShop(res, homePath);
     }
 
-    if (data.used) {
-      const reopenResult = await ensureCustomerWithVpTag(data.email);
-      if (reopenResult.ok) {
-        const { shopUrl, vpCollectionPath } = getConfig();
-        const loginUrl = buildShopLoginUrl(shopUrl, vpCollectionPath, { vp_notice: 'already_active' });
-        return res.redirect(302, loginUrl);
-      }
-      return redirectToShop(res, '/pages/vp?vp_error=already_used');
+    if (isTokenExpired(data)) {
+      return redirectToShop(res, homePath);
     }
-
-    if (Date.now() > data.expiresAt) {
-      return redirectToShop(res, '/pages/vp?vp_error=expired');
-    }
-
-    await markTokenUsed(token, data);
 
     const shopifyResult = await ensureCustomerWithVpTag(data.email);
 
     if (!shopifyResult.ok) {
-      await markTokenUnused(token, data);
-      return redirectToShop(res, '/pages/vp?vp_error=activation_failed');
+      return redirectToShop(res, homePath);
     }
 
-    const { shopUrl, vpCollectionPath } = getConfig();
-    const notice = shopifyResult.alreadyHadTag ? 'already_active' : 'activated';
-    const loginUrl = buildShopLoginUrl(shopUrl, vpCollectionPath, { vp_notice: notice });
+    if (!data.used) {
+      await markTokenUsed(token, data);
+    }
 
-    return res.redirect(302, loginUrl);
+    return redirectToShop(res, vpCollectionPath);
   } catch (err) {
     console.error(err);
-    return redirectToShop(res, '/pages/vp?vp_error=activation_failed');
+    return redirectToShop(res, getConfig().homePath);
   }
 }

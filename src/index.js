@@ -80,51 +80,36 @@ async function handleCreate(request, env) {
 async function handleActivate(request, env) {
   const token = new URL(request.url).searchParams.get('token');
 
+  const homePath = env.SHOP_HOME_PATH || '/';
+  const vpCollectionPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
+
   if (!token) {
-    return redirectToShop(env, '/pages/vp?vp_error=missing_token');
+    return redirectToShop(env, homePath);
   }
 
   const raw = await env.VP_TOKENS.get(token);
 
   if (!raw) {
-    return redirectToShop(env, '/pages/vp?vp_error=invalid_token');
+    return redirectToShop(env, homePath);
   }
 
   const data = JSON.parse(raw);
 
-  if (data.used) {
-    const reopenResult = await ensureCustomerWithVpTag(env, data.email);
-    if (reopenResult.ok) {
-      const returnPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
-      const loginUrl = `${env.SHOP_URL}/account/login?return_url=${encodeURIComponent(returnPath)}&vp_notice=already_active`;
-      return Response.redirect(loginUrl, 302);
-    }
-    return redirectToShop(env, '/pages/vp?vp_error=already_used');
-  }
-
   if (Date.now() > data.expiresAt) {
-    return redirectToShop(env, '/pages/vp?vp_error=expired');
+    return redirectToShop(env, homePath);
   }
-
-  // Mark used before Shopify call to reduce double-redemption race
-  await env.VP_TOKENS.put(token, JSON.stringify({ ...data, used: true }));
 
   const shopifyResult = await ensureCustomerWithVpTag(env, data.email);
 
   if (!shopifyResult.ok) {
-    // Allow retry if Shopify failed
-    await env.VP_TOKENS.put(token, JSON.stringify({ ...data, used: false }));
-    return redirectToShop(env, '/pages/vp?vp_error=activation_failed');
+    return redirectToShop(env, homePath);
   }
 
-  const returnPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
-  const loginUrl = `${env.SHOP_URL}/account/login?return_url=${encodeURIComponent(returnPath)}`;
-
-  if (shopifyResult.alreadyHadTag) {
-    return Response.redirect(`${loginUrl}&vp_notice=already_active`, 302);
+  if (!data.used) {
+    await env.VP_TOKENS.put(token, JSON.stringify({ ...data, used: true }));
   }
 
-  return Response.redirect(`${loginUrl}&vp_notice=activated`, 302);
+  return redirectToShop(env, vpCollectionPath);
 }
 
 // ---------------------------------------------------------------------------
@@ -304,3 +289,4 @@ function json(obj, status = 200) {
 function redirectToShop(env, path) {
   return Response.redirect(`${env.SHOP_URL}${path}`, 302);
 }
+
