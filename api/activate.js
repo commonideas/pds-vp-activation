@@ -2,6 +2,7 @@ import { getConfig } from '../lib/config.js';
 import { getToken, markTokenUsed } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
 import { redirectToShop } from '../lib/http.js';
+import { resolveActivationDestination } from '../lib/redirect-path.js';
 
 /** Magic links stay valid for 7 days; repeat clicks within that window reopen VP collection. */
 function isTokenExpired(data) {
@@ -41,7 +42,8 @@ export default async function handler(req, res) {
       await markTokenUsed(token, data);
     }
 
-    return redirectToShop(res, vpCollectionPath);
+    const destination = resolveActivationDestination(data.redirectPath, vpCollectionPath);
+    return redirectToShop(res, destination);
   } catch (err) {
     console.error(err);
     return redirectToShop(res, getConfig().homePath);

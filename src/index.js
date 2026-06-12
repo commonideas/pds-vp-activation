@@ -45,6 +45,15 @@ async function handleCreate(request, env) {
 
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email || body.Email || body.profile?.email);
+  const defaultCollection = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
+  const redirectPath = normalizeRedirectPath(
+    body.redirect_path ||
+      body.redirectPath ||
+      body.vp_redirect_path ||
+      body.properties?.vp_redirect_path ||
+      body.profile?.properties?.vp_redirect_path,
+    normalizeRedirectPath(defaultCollection, null)
+  );
 
   if (!email) {
     return json({ error: 'email_required' }, 400);
@@ -59,7 +68,7 @@ async function handleCreate(request, env) {
 
   await env.VP_TOKENS.put(
     token,
-    JSON.stringify({ email, createdAt: now, expiresAt, used: false }),
+    JSON.stringify({ email, createdAt: now, expiresAt, used: false, redirectPath }),
     { expirationTtl: TOKEN_TTL_SECONDS }
   );
 
@@ -109,7 +118,8 @@ async function handleActivate(request, env) {
     await env.VP_TOKENS.put(token, JSON.stringify({ ...data, used: true }));
   }
 
-  return redirectToShop(env, vpCollectionPath);
+  const destination = resolveActivationDestination(data.redirectPath, vpCollectionPath);
+  return redirectToShop(env, destination);
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +273,31 @@ function generateToken() {
 function normalizeEmail(value) {
   if (!value || typeof value !== 'string') return null;
   return value.trim().toLowerCase();
+}
+
+function normalizeRedirectPath(value, fallback = null) {
+  if (!value || typeof value !== 'string') return fallback;
+  let path = value.trim();
+  if (!path) return fallback;
+  if (path.includes('://')) {
+    try {
+      const url = new URL(path);
+      path = url.pathname + url.search;
+    } catch {
+      return fallback;
+    }
+  }
+  if (!path.startsWith('/')) path = `/${path}`;
+  if (path.includes('//') || /javascript:/i.test(path)) return fallback;
+  const pathname = path.split('?')[0];
+  if (!/^\/collections\/[a-z0-9][a-z0-9\-_]*$/i.test(pathname)) return fallback;
+  return path;
+}
+
+function resolveActivationDestination(tokenRedirectPath, defaultPath) {
+  const fromToken = normalizeRedirectPath(tokenRedirectPath, null);
+  if (fromToken) return fromToken;
+  return normalizeRedirectPath(defaultPath, '/collections/vp-h7k3m9');
 }
 
 async function revokePendingTokensForEmail(env, email) {
