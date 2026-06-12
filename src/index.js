@@ -87,7 +87,8 @@ async function handleCreate(request, env) {
 // ---------------------------------------------------------------------------
 
 async function handleActivate(request, env) {
-  const token = new URL(request.url).searchParams.get('token');
+  const requestUrl = new URL(request.url);
+  const token = requestUrl.searchParams.get('token');
 
   const homePath = env.SHOP_HOME_PATH || '/';
   const vpCollectionPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
@@ -118,7 +119,11 @@ async function handleActivate(request, env) {
     await env.VP_TOKENS.put(token, JSON.stringify({ ...data, used: true }));
   }
 
-  const destination = resolveActivationDestination(data.redirectPath, vpCollectionPath);
+  const destination = resolveActivationDestination(
+    data.redirectPath,
+    vpCollectionPath,
+    readActivationDestinationQuery(Object.fromEntries(requestUrl.searchParams.entries()))
+  );
   return redirectToShop(env, destination);
 }
 
@@ -294,9 +299,16 @@ function normalizeRedirectPath(value, fallback = null) {
   return path;
 }
 
-function resolveActivationDestination(tokenRedirectPath, defaultPath) {
-  const fromToken = normalizeRedirectPath(tokenRedirectPath, null);
-  if (fromToken) return fromToken;
+function readActivationDestinationQuery(query = {}) {
+  const raw = query.to ?? query.redirect ?? query.redirect_path;
+  if (Array.isArray(raw)) return raw[0] || null;
+  return raw || null;
+}
+
+function resolveActivationDestination(_tokenRedirectPath, defaultPath, queryOverride = null) {
+  const fromQuery = normalizeRedirectPath(queryOverride, null);
+  if (fromQuery) return fromQuery;
+
   return normalizeRedirectPath(defaultPath, '/collections/vp-h7k3m9');
 }
 
