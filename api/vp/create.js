@@ -46,17 +46,24 @@ export default async function handler(req, res) {
     const baseUrl = getActivationBaseUrl(req);
     const activationUrl = `${baseUrl}/activate?token=${encodeURIComponent(token)}`;
 
-    const klaviyoProfileUpdated = await updateKlaviyoProfile(email, activationUrl);
+    const klaviyoResult = await updateKlaviyoProfile(email, activationUrl);
 
     console.log('[vp/create] success', {
       email: maskEmailForLog(email),
       tokenSaved: true,
-      klaviyoProfileUpdated,
+      klaviyo: klaviyoResult,
       redirectPath,
       expiresAt: new Date(expiresAt).toISOString(),
     });
 
-    return json(res, { ok: true, activation_url: activationUrl });
+    return json(res, {
+      ok: true,
+      activation_url: activationUrl,
+      klaviyo_profile_updated: klaviyoResult.ok,
+      klaviyo: klaviyoResult.ok
+        ? { updated: true, method: klaviyoResult.method }
+        : { updated: false, error: klaviyoResult.error, detail: klaviyoResult.detail },
+    });
   } catch (err) {
     console.error('[vp/create] error', err);
     return json(res, { error: 'internal_error' }, 500);

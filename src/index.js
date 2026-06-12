@@ -233,34 +233,63 @@ async function tagsAdd(env, customerGid, tags) {
 // ---------------------------------------------------------------------------
 
 async function updateKlaviyoProfile(env, email, activationUrl) {
-  if (!env.KLAVIYO_PRIVATE_API_KEY) {
+  const apiKey =
+    env.KLAVIYO_PRIVATE_API_KEY || env.KLAVIYO_API_KEY || env.KLAVIYO_PRIVATE_KEY;
+  if (!apiKey) {
     console.warn('KLAVIYO_PRIVATE_API_KEY not set — skipping profile update');
-    return;
+    return { ok: false, error: 'KLAVIYO_PRIVATE_API_KEY not configured' };
   }
 
-  const res = await fetch('https://a.klaviyo.com/api/profile-import/', {
+  const properties = { vp_activation_url: activationUrl };
+  const headers = {
+    Authorization: `Klaviyo-API-Key ${apiKey}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    revision: '2024-10-15',
+  };
+
+  const importRes = await fetch('https://a.klaviyo.com/api/profile-import/', {
     method: 'POST',
-    headers: {
-      Authorization: `Klaviyo-API-Key ${env.KLAVIYO_PRIVATE_API_KEY}`,
-      'Content-Type': 'application/json',
-      revision: '2024-10-15',
-    },
+    headers,
     body: JSON.stringify({
-      data: {
-        type: 'profile',
-        attributes: {
-          email,
-          properties: {
-            vp_activation_url: activationUrl,
-          },
-        },
-      },
+      data: { type: 'profile', attributes: { email, properties } },
     }),
   });
 
-  if (!res.ok) {
-    console.error('Klaviyo profile-import failed', res.status, await res.text());
+  let importBody = null;
+  try {
+    importBody = await importRes.json();
+  } catch {
+    importBody = null;
   }
+
+  let profileId = importBody?.data?.id || null;
+  if (!profileId) {
+    const filter = encodeURIComponent(`equals(email,"${email.replace(/"/g, '\\"')}")`);
+    const lookupRes = await fetch(`https://a.klaviyo.com/api/profiles?filter=${filter}`, {
+      headers,
+    });
+    if (lookupRes.ok) {
+      const lookupBody = await lookupRes.json();
+      profileId = lookupBody?.data?.[0]?.id || null;
+    }
+  }
+
+  if (profileId) {
+    const patchRes = await fetch(`https://a.klaviyo.com/api/profiles/${profileId}/`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        data: { type: 'profile', id: profileId, attributes: { properties } },
+      }),
+    });
+    if (patchRes.ok) return { ok: true, method: 'profile-patch' };
+    console.error('Klaviyo profile PATCH failed', patchRes.status, await patchRes.text());
+  }
+
+  if (importRes.ok) return { ok: true, method: 'profile-import' };
+  console.error('Klaviyo profile-import failed', importRes.status, JSON.stringify(importBody));
+  return { ok: false, error: `profile-import failed (${importRes.status})` };
 }
 
 // ---------------------------------------------------------------------------
