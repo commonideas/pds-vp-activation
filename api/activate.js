@@ -1,7 +1,7 @@
 import { getConfig } from '../lib/config.js';
 import { getToken, markTokenUsed } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
-import { redirectToShop } from '../lib/http.js';
+import { redirectToShop, withQueryParams } from '../lib/http.js';
 import {
   readActivationDestinationQuery,
   resolveActivationDestination,
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       vpCollectionPath,
       readActivationDestinationQuery(req.query)
     );
-    return redirectToShop(res, destination);
+    return redirectToShop(res, withQueryParams(destination, { vp_token: token }));
   } catch (err) {
     console.error(err);
     return redirectToShop(res, getConfig().homePath);

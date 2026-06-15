@@ -124,7 +124,8 @@ async function handleActivate(request, env) {
     vpCollectionPath,
     readActivationDestinationQuery(Object.fromEntries(requestUrl.searchParams.entries()))
   );
-  return redirectToShop(env, destination);
+  const redirectPath = withQueryParams(destination, { vp_token: token });
+  return redirectToShop(env, redirectPath);
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +361,22 @@ function json(obj, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+function withQueryParams(path, params = {}) {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const qIndex = normalized.indexOf('?');
+  const pathname = qIndex === -1 ? normalized : normalized.slice(0, qIndex);
+  const search = new URLSearchParams(qIndex === -1 ? '' : normalized.slice(qIndex + 1));
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+
+  const qs = search.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
 }
 
 function redirectToShop(env, path) {
