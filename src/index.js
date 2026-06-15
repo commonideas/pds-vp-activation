@@ -45,7 +45,7 @@ async function handleCreate(request, env) {
 
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email || body.Email || body.profile?.email);
-  const defaultCollection = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
+  const defaultCollection = env.VP_COLLECTION_PATH || '/collections/ventes-privees';
   const redirectPath = normalizeRedirectPath(
     body.redirect_path ||
       body.redirectPath ||
@@ -91,7 +91,7 @@ async function handleActivate(request, env) {
   const token = requestUrl.searchParams.get('token');
 
   const homePath = env.SHOP_HOME_PATH || '/';
-  const vpCollectionPath = env.VP_COLLECTION_PATH || '/collections/vp-h7k3m9';
+  const vpCollectionPath = env.VP_COLLECTION_PATH || '/collections/ventes-privees';
 
   if (!token) {
     return redirectToShop(env, homePath);
@@ -338,7 +338,7 @@ function resolveActivationDestination(_tokenRedirectPath, defaultPath, queryOver
   const fromQuery = normalizeRedirectPath(queryOverride, null);
   if (fromQuery) return fromQuery;
 
-  return normalizeRedirectPath(defaultPath, '/collections/vp-h7k3m9');
+  return normalizeRedirectPath(defaultPath, '/collections/ventes-privees');
 }
 
 async function revokePendingTokensForEmail(env, email) {

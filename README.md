@@ -40,7 +40,7 @@ Copy from `.env.example`. Required:
 - `SHOPIFY_ADMIN_TOKEN`
 - `SHOP_URL`
 - `SHOP_HOME_PATH` (default `/` — expired/invalid links)
-- `VP_COLLECTION_PATH` — **live:** `/collections/vp-h7k3m9` (assign `collection.vp` on the collection in Shopify). **Draft preview only:** add `?view=vp` to the path in Vercel env.
+- `VP_COLLECTION_PATH` — **live:** `/collections/ventes-privees` (assign `collection.vp` on the collection in Shopify). **Draft preview only:** add `?view=vp` to the path in Vercel env.
 - `KLAVIYO_WEBHOOK_SECRET`
 - `KLAVIYO_PRIVATE_API_KEY`
 - `ACTIVATION_BASE_URL`
