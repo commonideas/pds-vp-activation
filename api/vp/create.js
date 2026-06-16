@@ -1,7 +1,26 @@
 import { createActivationForEmail } from '../../lib/activation.js';
 import { getConfig } from '../../lib/config.js';
 import { json, maskEmailForLog, normalizeEmail } from '../../lib/http.js';
-import { normalizeRedirectPath } from '../../lib/redirect-path.js';
+import { resolveLocaleAndPath } from '../../lib/redirect-path.js';
+
+function readLocaleFromBody(body) {
+  return (
+    body.vp_language ||
+    body.language ||
+    body.profile?.properties?.vp_language ||
+    body.properties?.vp_language
+  );
+}
+
+function readRedirectPathFromBody(body) {
+  return (
+    body.redirect_path ||
+    body.redirectPath ||
+    body.vp_redirect_path ||
+    body.properties?.vp_redirect_path ||
+    body.profile?.properties?.vp_redirect_path
+  );
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -19,27 +38,25 @@ export default async function handler(req, res) {
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     const email = normalizeEmail(body.email || body.Email || body.profile?.email);
-    const redirectPath = normalizeRedirectPath(
-      body.redirect_path ||
-        body.redirectPath ||
-        body.vp_redirect_path ||
-        body.properties?.vp_redirect_path ||
-        body.profile?.properties?.vp_redirect_path,
-      normalizeRedirectPath(vpCollectionPath, null)
-    );
+    const { locale, redirectPath } = resolveLocaleAndPath({
+      redirectPathInput: readRedirectPathFromBody(body),
+      localeInput: readLocaleFromBody(body),
+      defaultPath: vpCollectionPath,
+    });
 
     if (!email) {
       console.warn('[vp/create] email_required');
       return json(res, { error: 'email_required' }, 400);
     }
 
-    const result = await createActivationForEmail(email, redirectPath, req);
+    const result = await createActivationForEmail(email, redirectPath, req, locale);
 
     console.log('[vp/create] success', {
       email: maskEmailForLog(email),
       tokenSaved: true,
       klaviyo: result.klaviyoResult,
       redirectPath,
+      locale,
       expiresAt: new Date(result.expiresAt).toISOString(),
     });
 

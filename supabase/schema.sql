@@ -7,7 +7,8 @@ create table if not exists public.vp_tokens (
   expires_at timestamptz not null,
   used boolean not null default false,
   revoked boolean not null default false,
-  redirect_path text
+  redirect_path text,
+  locale text
 );
 
 create index if not exists idx_vp_tokens_email on public.vp_tokens (email);

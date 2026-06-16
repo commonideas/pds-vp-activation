@@ -3,6 +3,8 @@ import { resendActivationForEmail } from '../../lib/activation.js';
 import { getEmailVpStatus } from '../../lib/email-status.js';
 import { getLatestTokenForEmail } from '../../lib/tokens.js';
 import { json, maskEmailForLog, normalizeEmail } from '../../lib/http.js';
+import { resolveLocaleAndPath } from '../../lib/redirect-path.js';
+import { getConfig } from '../../lib/config.js';
 
 const RESEND_COOLDOWN_MS = 5 * 60 * 1000;
 
@@ -20,7 +22,13 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     const email = normalizeEmail(body.email);
-    const redirectPath = body.redirect_path || body.redirectPath || body.vp_redirect_path || null;
+    const { vpCollectionPath } = getConfig();
+    const { locale, redirectPath } = resolveLocaleAndPath({
+      redirectPathInput:
+        body.redirect_path || body.redirectPath || body.vp_redirect_path || null,
+      localeInput: body.vp_language || body.language || null,
+      defaultPath: vpCollectionPath,
+    });
 
     if (!email) {
       return json(res, { error: 'email_required' }, 400);
@@ -44,7 +52,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const result = await resendActivationForEmail(email, redirectPath, req);
+    const result = await resendActivationForEmail(email, redirectPath, req, locale);
 
     console.log('[vp/resend] success', {
       email: maskEmailForLog(email),

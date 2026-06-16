@@ -3,6 +3,7 @@ import { getToken, markTokenUsed } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
 import { redirectToShop, withQueryParams } from '../lib/http.js';
 import {
+  applyLocaleToPath,
   readActivationDestinationQuery,
   resolveActivationDestination,
 } from '../lib/redirect-path.js';
@@ -50,7 +51,8 @@ export default async function handler(req, res) {
       vpCollectionPath,
       readActivationDestinationQuery(req.query)
     );
-    return redirectToShop(res, withQueryParams(destination, { vp_token: token }));
+    const localizedDestination = applyLocaleToPath(destination, data.locale);
+    return redirectToShop(res, withQueryParams(localizedDestination, { vp_token: token }));
   } catch (err) {
     console.error(err);
     return redirectToShop(res, getConfig().homePath);
