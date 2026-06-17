@@ -52,7 +52,10 @@ export default async function handler(req, res) {
       readActivationDestinationQuery(req.query)
     );
     const localizedDestination = applyLocaleToPath(destination, data.locale);
-    return redirectToShop(res, withQueryParams(localizedDestination, { vp_token: token }));
+    const pathWithQuery = withQueryParams(localizedDestination, { vp_token: token });
+    // Query + hash: Weglot language redirects often drop ?query but keep #hash.
+    const redirectPath = `${pathWithQuery}#vp_token=${encodeURIComponent(token)}`;
+    return redirectToShop(res, redirectPath);
   } catch (err) {
     console.error(err);
     return redirectToShop(res, getConfig().homePath);
