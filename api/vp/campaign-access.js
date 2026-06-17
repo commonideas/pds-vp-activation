@@ -2,6 +2,22 @@ import { applyShopCors } from '../../lib/cors.js';
 import { resolveCampaignAccess } from '../../lib/campaign-access.js';
 import { json, normalizeEmail } from '../../lib/http.js';
 
+function readQueryParam(req, name) {
+  const fromQuery = req.query?.[name];
+  if (typeof fromQuery === 'string' && fromQuery.trim()) {
+    return fromQuery.trim();
+  }
+
+  try {
+    const rawUrl = req.url || '';
+    const url = new URL(rawUrl, 'https://localhost');
+    const value = url.searchParams.get(name);
+    return value ? value.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
 export default async function handler(req, res) {
   applyShopCors(req, res);
 
@@ -14,11 +30,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const profileId = req.query.hash_email || req.query.profile_id;
-    const email = normalizeEmail(req.query.email);
-    const exchangeId = req.query._kx || req.query.exchange_id;
+    const profileId = readQueryParam(req, 'hash_email') || readQueryParam(req, 'profile_id');
+    const email = normalizeEmail(readQueryParam(req, 'email'));
+    const exchangeId = readQueryParam(req, 'exchange_id') || readQueryParam(req, '_kx');
     const fromCampaignContext =
-      req.query.campaign === '1' || req.query.referrer === 'campaign';
+      readQueryParam(req, 'campaign') === '1' || readQueryParam(req, 'referrer') === 'campaign';
 
     if (!profileId && !email && !exchangeId) {
       return json(res, { access: false, error: 'identifier_required' }, 400);
