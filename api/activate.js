@@ -1,4 +1,5 @@
-import { getConfig } from '../lib/config.js';
+import { getConfig, getDefaultStoreLocale } from '../lib/config.js';
+import { normalizeLocale } from '../lib/redirect-path.js';
 import { getToken, markTokenUsed } from '../lib/tokens.js';
 import { ensureCustomerWithVpTag } from '../lib/shopify.js';
 import { redirectToShop, withQueryParams } from '../lib/http.js';
@@ -51,7 +52,8 @@ export default async function handler(req, res) {
       vpCollectionPath,
       readActivationDestinationQuery(req.query)
     );
-    const localizedDestination = applyLocaleToPath(destination, data.locale);
+    const locale = normalizeLocale(data.locale || getDefaultStoreLocale());
+    const localizedDestination = applyLocaleToPath(destination, locale);
     const pathWithQuery = withQueryParams(localizedDestination, { vp_token: token });
     // Query + hash: Weglot language redirects often drop ?query but keep #hash.
     const redirectPath = `${pathWithQuery}#vp_token=${encodeURIComponent(token)}`;
