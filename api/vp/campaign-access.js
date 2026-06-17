@@ -1,6 +1,6 @@
 import { applyShopCors } from '../../lib/cors.js';
 import { resolveCampaignAccess } from '../../lib/campaign-access.js';
-import { json } from '../../lib/http.js';
+import { json, normalizeEmail } from '../../lib/http.js';
 
 export default async function handler(req, res) {
   applyShopCors(req, res);
@@ -15,10 +15,24 @@ export default async function handler(req, res) {
 
   try {
     const profileId = req.query.hash_email || req.query.profile_id;
-    const result = await resolveCampaignAccess(profileId);
+    const email = normalizeEmail(req.query.email);
+    const fromCampaignContext =
+      req.query.campaign === '1' || req.query.referrer === 'campaign';
+
+    if (!profileId && !email) {
+      return json(res, { access: false, error: 'identifier_required' }, 400);
+    }
+
+    const result = await resolveCampaignAccess({
+      profileIdInput: profileId,
+      emailInput: email,
+      fromCampaignContext,
+    });
 
     if (!result.access) {
-      return json(res, result, result.error === 'invalid_profile_id' ? 400 : 403);
+      const status =
+        result.error === 'invalid_profile_id' || result.error === 'identifier_required' ? 400 : 403;
+      return json(res, result, status);
     }
 
     return json(res, result);
