@@ -16,16 +16,18 @@ export default async function handler(req, res) {
   try {
     const profileId = req.query.hash_email || req.query.profile_id;
     const email = normalizeEmail(req.query.email);
+    const kx = String(req.query._kx || '').trim();
     const fromCampaignContext =
       req.query.campaign === '1' || req.query.referrer === 'campaign';
 
-    if (!profileId && !email) {
+    if (!profileId && !email && !kx) {
       return json(res, { access: false, error: 'identifier_required' }, 400);
     }
 
     const result = await resolveCampaignAccess({
       profileIdInput: profileId,
       emailInput: email,
+      kxInput: kx,
       fromCampaignContext,
     });
 
